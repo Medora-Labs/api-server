@@ -3,15 +3,20 @@ dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
-import mongoose from 'mongoose';
+import { createServer } from 'http';
 import { ClerkExpressWithAuth } from '@clerk/clerk-sdk-node';
 import doctorRoutes from './routes/doctors';
 import appointmentRoutes from './routes/appointments';
+import WebSocketService from './services/websocket';
 import { connectToDatabase } from './utils/database';
 
 const app = express();
+const server = createServer(app);
 const port = process.env.PORT || 3000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+// Initialize WebSocket service
+new WebSocketService(server);
 
 // Middleware
 app.use(cors({
@@ -22,9 +27,6 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(ClerkExpressWithAuth());
-
-// Connect to MongoDB
-connectToDatabase();
 
 // Routes
 app.use('/api/doctors', doctorRoutes);
@@ -41,6 +43,12 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+// Connect to database and start server
+connectToDatabase().then(() => {
+  server.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}).catch((error) => {
+  console.error('Failed to connect to database:', error);
+  process.exit(1);
 }); 
