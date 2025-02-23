@@ -1,13 +1,8 @@
 import express from 'express';
-import { ClerkExpressRequireAuth } from '@clerk/clerk-sdk-node';
 import Appointment from '../models/appointment';
 import Doctor from '../models/doctor';
-import calendarService from '../services/calendar';
 
 const router = express.Router();
-
-// Middleware to require authentication for certain routes
-const authMiddleware = ClerkExpressRequireAuth();
 
 // Get available slots for a doctor
 router.get('/available-slots/:doctorId', async (req, res) => {
@@ -71,27 +66,17 @@ router.get('/available-slots/:doctorId', async (req, res) => {
   }
 });
 
-// Create appointment
+// Create a new appointment
 router.post('/', async (req, res) => {
   try {
     const { doctorId, patientName, patientPhone, startTime, endTime, notes } = req.body;
 
-    // Validate time slot availability
-    const existingAppointment = await Appointment.findOne({
-      doctorId,
-      status: 'scheduled',
-      $or: [
-        {
-          startTime: { $lt: new Date(endTime) },
-          endTime: { $gt: new Date(startTime) },
-        },
-      ],
-    });
-
-    if (existingAppointment) {
-      return res.status(400).json({ error: 'Time slot is not available' });
+    // Validate required fields
+    if (!doctorId || !patientName || !patientPhone || !startTime || !endTime) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    // Create the appointment
     const appointment = await Appointment.create({
       doctorId,
       patientName,
@@ -99,6 +84,7 @@ router.post('/', async (req, res) => {
       startTime,
       endTime,
       notes,
+      status: 'scheduled'
     });
 
     res.status(201).json(appointment);
@@ -109,7 +95,7 @@ router.post('/', async (req, res) => {
 });
 
 // Get doctor's appointments
-router.get('/doctor/:doctorId', authMiddleware, async (req, res) => {
+router.get('/doctor/:doctorId', async (req, res) => {
   try {
     const { status, date } = req.query;
     const query: any = { doctorId: req.params.doctorId };
@@ -136,12 +122,14 @@ router.get('/doctor/:doctorId', authMiddleware, async (req, res) => {
 });
 
 // Update appointment status
-router.patch('/:appointmentId', authMiddleware, async (req, res) => {
+router.patch('/:appointmentId', async (req, res) => {
   try {
     const { status } = req.body;
+    const appointmentId = req.params.appointmentId;
+
     const appointment = await Appointment.findByIdAndUpdate(
-      req.params.appointmentId,
-      { $set: { status } },
+      appointmentId,
+      { status },
       { new: true }
     );
 
@@ -156,12 +144,14 @@ router.patch('/:appointmentId', authMiddleware, async (req, res) => {
   }
 });
 
-// Cancel appointment
+// Delete/Cancel appointment
 router.delete('/:appointmentId', async (req, res) => {
   try {
+    const appointmentId = req.params.appointmentId;
+
     const appointment = await Appointment.findByIdAndUpdate(
-      req.params.appointmentId,
-      { $set: { status: 'cancelled' } },
+      appointmentId,
+      { status: 'cancelled' },
       { new: true }
     );
 

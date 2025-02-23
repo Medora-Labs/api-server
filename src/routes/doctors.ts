@@ -1,28 +1,15 @@
 import express from 'express';
-import { ClerkExpressRequireAuth } from '@clerk/clerk-sdk-node';
 import Doctor from '../models/doctor';
 
-declare global {
-  namespace Express {
-    interface Request {
-      auth?: {
-        userId: string;
-      };
-    }
-  }
-}
-
 const router = express.Router();
-const authMiddleware = ClerkExpressRequireAuth();
 
 // Create or update doctor profile
-router.post('/profile', authMiddleware, async (req: express.Request, res: express.Response) => {
+router.post('/profile', async (req: express.Request, res: express.Response) => {
   try {
-    const { name, specialization, phoneNumber, workingHours } = req.body;
-    const userId = req.auth?.userId;
+    const { name, specialization, phoneNumber, workingHours, userId } = req.body;
 
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(400).json({ error: 'userId is required' });
     }
 
     const doctor = await Doctor.findOneAndUpdate(
@@ -45,12 +32,12 @@ router.post('/profile', authMiddleware, async (req: express.Request, res: expres
 });
 
 // Get doctor profile
-router.get('/profile', authMiddleware, async (req: express.Request, res: express.Response) => {
+router.get('/profile/:userId', async (req: express.Request, res: express.Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.params.userId;
     
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(400).json({ error: 'userId is required' });
     }
 
     const doctor = await Doctor.findOne({ userId });
@@ -83,13 +70,13 @@ router.get('/:doctorId', async (req: express.Request, res: express.Response) => 
 });
 
 // Update working hours
-router.patch('/working-hours', authMiddleware, async (req: express.Request, res: express.Response) => {
+router.patch('/working-hours', async (req: express.Request, res: express.Response) => {
   try {
     const { start, end } = req.body;
-    const userId = req.auth?.userId;
+    const userId = req.params.userId;
 
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(400).json({ error: 'userId is required' });
     }
 
     // Validate time format (HH:mm)
@@ -117,6 +104,18 @@ router.patch('/working-hours', authMiddleware, async (req: express.Request, res:
   } catch (error) {
     console.error('Error updating working hours:', error);
     res.status(500).json({ error: 'Failed to update working hours' });
+  }
+});
+
+// Get all doctors
+router.get('/get-all-doctors', async (req: express.Request, res: express.Response) => {
+  try {
+    const doctors = await Doctor.find();
+    console.log(doctors);
+    res.json(doctors);
+  } catch (error) {
+    console.error('Error fetching doctors:', error);
+    res.status(500).json({ error: 'Failed to fetch doctors' });
   }
 });
 

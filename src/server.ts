@@ -4,7 +4,6 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
-import { ClerkExpressWithAuth } from '@clerk/clerk-sdk-node';
 import doctorRoutes from './routes/doctors';
 import appointmentRoutes from './routes/appointments';
 import WebSocketService from './services/websocket';
@@ -20,7 +19,6 @@ new WebSocketService(server);
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(ClerkExpressWithAuth());
 
 // Routes
 app.use('/api/doctors', doctorRoutes);

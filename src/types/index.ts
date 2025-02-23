@@ -5,7 +5,6 @@ export interface Doctor {
   specialization: string;
   description: string;
   phoneNumber: string;
-  calendarId?: string;
 }
 
 export interface Appointment {
@@ -16,7 +15,6 @@ export interface Appointment {
   startTime: Date;
   endTime: Date;
   status: 'scheduled' | 'cancelled' | 'completed';
-  googleEventId?: string;
 }
 
 export interface TimeSlot {
