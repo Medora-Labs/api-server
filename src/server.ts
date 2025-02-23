@@ -13,18 +13,12 @@ import { connectToDatabase } from './utils/database';
 const app = express();
 const server = createServer(app);
 const port = process.env.PORT || 3000;
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 // Initialize WebSocket service
 new WebSocketService(server);
 
 // Middleware
-app.use(cors({
-  origin: FRONTEND_URL,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+app.use(cors());
 app.use(express.json());
 app.use(ClerkExpressWithAuth());
 
